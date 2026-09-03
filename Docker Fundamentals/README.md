@@ -1,6 +1,21 @@
-# Docker Fundamentals - Hello World Applications
+# Docker Fundamentals - Nishant's Hello World Applications
 
-Six simple "Hello World" applications, each containerized with its own Dockerfile.
+**Author:** Nishant
+
+My Docker Fundamentals homework. I built six simple "Hello World" web applications, one per
+technology, and containerized each of them with its own Dockerfile. Every app prints a
+personalised greeting ("Hello World from Nishant's ... app!") so I can confirm in the browser
+that it is really my container responding.
+
+## What I built
+| App | Technology | What it does |
+|---|---|---|
+| nodejs-app | Node.js 20 (built-in `http` module) | Tiny HTTP server that returns my greeting |
+| python-app | Python 3.12 + Flask | Flask route `/` that returns my greeting |
+| java-app | Java 21 (built-in `HttpServer`) | Compiled inside the image, serves my greeting |
+| Apache-app | Apache HTTP Server 2.4 | Serves a static `index.html` |
+| React-app | React 18, multi-stage build, served by Nginx | Builds the production bundle, then Nginx serves it |
+| nginx-app | Nginx (alpine) | Serves a static `index.html` |
 
 ## Folder structure
 ```
@@ -10,81 +25,119 @@ Docker Fundamentals/
 ├── java-app/       Java (built-in HttpServer)
 ├── Apache-app/     Apache HTTP Server (static page)
 ├── React-app/      React (built + served by Nginx)
-└── nginx-app/      Nginx (static page)
+├── nginx-app/      Nginx (static page)
+└── screenshots/    Browser screenshots of each app
 ```
 
 ## Ports summary
-| App | Container port | Example run command |
-|---|---|---|
-| nodejs-app | 3000 | `docker run -p 3000:3000 nodejs-app` |
-| python-app | 5000 | `docker run -p 5000:5000 python-app` |
-| java-app | 8080 | `docker run -p 8080:8080 java-app` |
-| Apache-app | 80 | `docker run -p 8081:80 apache-app` |
-| React-app | 80 | `docker run -p 8082:80 react-app` |
-| nginx-app | 80 | `docker run -p 8083:80 nginx-app` |
+I tagged every image with a `nishant-` prefix so my images are easy to spot in `docker images`.
+Python is mapped to host port 5001 because macOS AirPlay Receiver already listens on port 5000 on my Mac.
 
-## Build and run each app
-Run these from inside each app's folder.
+| App | Container port | Host port I used | Run command |
+|---|---|---|---|
+| nodejs-app | 3000 | 3000 | `docker run -d -p 3000:3000 nishant-nodejs-app` |
+| python-app | 5000 | 5001 | `docker run -d -p 5001:5000 nishant-python-app` |
+| java-app | 8080 | 8080 | `docker run -d -p 8080:8080 nishant-java-app` |
+| Apache-app | 80 | 8081 | `docker run -d -p 8081:80 nishant-apache-app` |
+| React-app | 80 | 8082 | `docker run -d -p 8082:80 nishant-react-app` |
+| nginx-app | 80 | 8083 | `docker run -d -p 8083:80 nishant-nginx-app` |
 
-### nodejs-app
+## How I built and ran each app
+All commands are run from inside the `Docker Fundamentals` folder.
+
+### 1. Node.js
 ```bash
 cd nodejs-app
-docker build -t nodejs-app .
-docker run -d -p 3000:3000 nodejs-app
-# open http://localhost:3000
+docker build -t nishant-nodejs-app .
+docker run -d --name nishant-nodejs -p 3000:3000 nishant-nodejs-app
+# open http://localhost:3000  ->  "Hello World from Nishant's Node.js app!"
 ```
 
-### python-app
+### 2. Python (Flask)
 ```bash
 cd python-app
-docker build -t python-app .
-docker run -d -p 5000:5000 python-app
-# open http://localhost:5000
+docker build -t nishant-python-app .
+docker run -d --name nishant-python -p 5001:5000 nishant-python-app
+# open http://localhost:5001  ->  "Hello World from Nishant's Python (Flask) app!"
 ```
 
-### java-app
+### 3. Java
 ```bash
 cd java-app
-docker build -t java-app .
-docker run -d -p 8080:8080 java-app
-# open http://localhost:8080
+docker build -t nishant-java-app .
+docker run -d --name nishant-java -p 8080:8080 nishant-java-app
+# open http://localhost:8080  ->  "Hello World from Nishant's Java app!"
 ```
 
-### Apache-app
+### 4. Apache HTTP Server
 ```bash
 cd Apache-app
-docker build -t apache-app .
-docker run -d -p 8081:80 apache-app
-# open http://localhost:8081
+docker build -t nishant-apache-app .
+docker run -d --name nishant-apache -p 8081:80 nishant-apache-app
+# open http://localhost:8081  ->  "Hello World from Nishant's Apache HTTP Server!"
 ```
 
-### React-app
+### 5. React (multi-stage build + Nginx)
 ```bash
 cd React-app
-docker build -t react-app .
-docker run -d -p 8082:80 react-app
-# open http://localhost:8082
+docker build -t nishant-react-app .
+docker run -d --name nishant-react -p 8082:80 nishant-react-app
+# open http://localhost:8082  ->  "Hello World from Nishant's React app!"
 ```
 
-### nginx-app
+### 6. Nginx
 ```bash
 cd nginx-app
-docker build -t nginx-app .
-docker run -d -p 8083:80 nginx-app
-# open http://localhost:8083
+docker build -t nishant-nginx-app .
+docker run -d --name nishant-nginx -p 8083:80 nishant-nginx-app
+# open http://localhost:8083  ->  "Hello World from Nishant's Nginx server!"
 ```
 
-## Useful Docker commands
+## Verifying from the terminal
+```bash
+docker images | grep nishant          # all six of my images
+docker ps                             # all six containers running
+curl http://localhost:3000            # Node.js greeting
+curl http://localhost:5001            # Python greeting
+curl http://localhost:8080            # Java greeting
+curl http://localhost:8081            # Apache greeting
+curl http://localhost:8082            # React greeting (text is rendered by the JS bundle)
+curl http://localhost:8083            # Nginx greeting
+```
+
+## Cleaning up
+```bash
+docker stop nishant-nodejs nishant-python nishant-java nishant-apache nishant-react nishant-nginx
+docker rm   nishant-nodejs nishant-python nishant-java nishant-apache nishant-react nishant-nginx
+docker rmi  nishant-nodejs-app nishant-python-app nishant-java-app nishant-apache-app nishant-react-app nishant-nginx-app
+```
+
+## Useful Docker commands I used
 ```bash
 docker images            # list built images
-docker ps                # list running containers
+docker ps -a             # list all containers (running and stopped)
+docker logs <container>  # view container logs
+docker exec -it <container> sh   # open a shell inside a running container
 docker stop <container>  # stop a container
 docker rm <container>    # remove a container
-docker logs <container>  # view container logs
+docker rmi <image>       # remove an image
 ```
 
+## What I learned
+- A Dockerfile is a recipe: `FROM` picks a base image, `COPY` adds my code, `RUN` executes build
+  steps, `EXPOSE` documents the port, and `CMD` says what to start.
+- Container port vs host port: `-p 8081:80` maps host 8081 to the container's 80, which is how
+  Apache, React and Nginx can all run at the same time even though they all listen on 80 inside.
+- Multi-stage builds (React app) keep the final image small: Node is only needed to build,
+  so the final stage is just Nginx plus the static files.
+- `.dockerignore` stops `node_modules` from being copied into the image and slowing the build.
+
 ## Screenshots
-Add a screenshot of each app showing "Hello World" in the browser, plus the build/run terminal output.
+Terminal view: my six images, all six containers running, and `curl` against every port:
+
+![docker images, docker ps and curl output](screenshots/terminal.png)
+
+Each browser screenshot below shows the app running in my container with my personalised greeting.
 
 - Node.js: ![nodejs](screenshots/nodejs.png)
 - Python: ![python](screenshots/python.png)

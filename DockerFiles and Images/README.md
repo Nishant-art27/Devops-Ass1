@@ -1,7 +1,7 @@
 # Docker Multi-Stage Build - Homework
 
-**Name:** Shubham Shah
-**Enrollment Number:** 24BCS10316
+**Name:** Nishant
+**Enrollment Number:** <24BCS10314>
 
 ## Task 1: Multi-Stage Dockerfile
 

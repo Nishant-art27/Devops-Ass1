@@ -11,11 +11,7 @@ connected to multiple networks** so it can bridge the frontend and the database.
 |---|---|---|
 | frontend | nginx:alpine | frontend-net |
 | backend | nginx:alpine | backend-net + frontend-net + db-net |
-| database | nginx:alpine | db-net |
-
-> Note: the database tier uses `nginx:alpine` as a lightweight stand-in (the VM disk was
-> too small to pull the full `mysql:8.0` image). The networking behaviour being tested -
-> multiple networks, DNS by container name, and isolation between networks - is identical.
+| database | mysql:8.0 | db-net |
 
 ### Create 3 networks
 ```bash
@@ -37,19 +33,20 @@ docker run -d --name backend  --network backend-net nginx:alpine
 docker network connect frontend-net backend
 docker network connect db-net backend
 
-# backend is on networks: backend-net db-net frontend-net
+docker inspect backend --format '{{range $n,$v := .NetworkSettings.Networks}}{{$n}} {{end}}'
+# backend-net db-net frontend-net
 ```
 
 ### Check connectivity
 ```bash
 # backend -> frontend (shared frontend-net): SUCCESS
-docker exec backend wget -qO- http://frontend        # returns nginx welcome page
+docker exec backend wget -qO- http://frontend | head -n 5   # returns nginx welcome page
 
 # backend -> database (shared db-net): SUCCESS
-docker exec backend nc -z database 3306              # port 3306 reachable
+docker exec backend nc -z database 3306; echo "exit code: $?"    # exit code: 0
 
 # frontend -> database (different networks): FAILS (isolated)
-docker exec frontend nc -z database 3306             # nc: bad address 'database'
+docker exec frontend nc -z database 3306; echo "exit code: $?"   # nc: bad address 'database', exit code: 1
 ```
 
 **What I understood:** Containers on the **same** Docker network can reach each other by
@@ -64,19 +61,20 @@ database, while the frontend still cannot reach the database directly - which is
 
 ```bash
 docker run -d --name web-host --network host nginx:alpine
-docker ps          # note: host network shows NO port mapping
-curl http://localhost:80    # returns the nginx welcome page
+docker ps                                   # note: host network shows NO port mapping
+curl -s http://localhost:80 | head -n 5     # from my Mac: empty (see note below)
+docker exec web-host wget -qO- http://localhost:80 | head -n 5   # inside the host netns: nginx welcome page
 ```
 
 **What I understood:** With `--network host`, the container shares the host's network
-directly - no port mapping (`-p`) is needed, and the service is available on the host's own
+directly - no port mapping (`-p`) is needed, and the service listens on the host's own
 port 80.
 
-> Note: `nginx:alpine` was used here instead of `httpd:2.4` because the VM disk was full.
-> The host-network behaviour is the same - the web server is reachable on the host's own
-> port 80 with no `-p` mapping. On a native Linux host this works directly at
-> `http://localhost:80`; on Docker Desktop (Mac/Windows) host networking binds inside the
-> Docker VM rather than the Mac's localhost.
+> Note: I ran this on Docker Desktop for Mac. There the "host" is the Linux VM that Docker
+> Desktop runs, not my Mac itself, so `curl http://localhost:80` from the Mac terminal
+> returned nothing, while the same request from inside the container's (host) network
+> namespace returned the nginx page. On a native Linux host `curl http://localhost:80`
+> works directly.
 
 ![Task 2 - host network](screenshots/image2.png)
 
@@ -84,7 +82,7 @@ port 80.
 
 ```bash
 # Create a local folder and file
-mkdir site
+mkdir -p site
 echo "<h1>Hello students</h1>" > site/index.html
 
 # Bind mount the folder into Nginx
@@ -101,6 +99,11 @@ curl http://localhost:8090      # <h1>Hello students - content updated live!</h1
 **What I understood:** A bind mount links a folder on my machine directly into the
 container. Any edit I make to the local file appears immediately inside the container - no
 rebuild or restart needed. This is very useful during development.
+
+> Note: I ran this from a `bind-mount-demo` folder outside `~/Documents`. When I first tried
+> from inside Documents, the container start hung because macOS had not granted Docker
+> Desktop access to the Documents folder. A copy of the `site/index.html` used is kept in
+> this folder.
 
 ![Task 3 - bind mount](screenshots/image3.png)
 
@@ -136,6 +139,6 @@ docker service create --name web --network my-overlay nginx
 
 ## Cleanup commands used
 ```bash
-docker rm -f frontend backend database apache-host nginx-bind
+docker rm -f frontend backend database web-host nginx-bind
 docker network rm frontend-net backend-net db-net
 ```

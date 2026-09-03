@@ -1,7 +1,7 @@
 {
-  "name": "nodejs-hello-world",
+  "name": "nishant-nodejs-hello-world",
   "version": "1.0.0",
-  "description": "Hello World Node.js app for Docker",
+  "description": "Nishant's Hello World Node.js app for Docker",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"

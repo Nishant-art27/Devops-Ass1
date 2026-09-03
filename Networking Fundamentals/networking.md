@@ -74,9 +74,9 @@ Queries DNS to resolve a domain name into its IP address (and vice versa).
 
 ## 8. traceroute
 ```bash
-traceroute google.com
+traceroute -I google.com
 ```
-Shows the full path (each router/hop) that packets take to reach a destination, with the time at each hop.
+Shows the full path (each router/hop) that packets take to reach a destination, with the time at each hop. I used `-I` (ICMP echo probes instead of UDP) because the default UDP probes were dropped by the Docker Desktop NAT on my machine and every hop after the gateway showed `* * *`.
 
 **What I understood:** It shows every stop between my machine and the destination, which helps find where a connection slows down or breaks.
 
