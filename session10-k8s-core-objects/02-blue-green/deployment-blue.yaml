@@ -1,0 +1,25 @@
+# Task 11: blue environment (3 replicas) - http-echo returns which slot answered
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-blue
+  labels:
+    owner: nishant
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      slot: blue
+  template:
+    metadata:
+      labels:
+        app: myapp
+        slot: blue
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-listen=:5678", "-text=BLUE ENVIRONMENT - Nishant app v1"]
+          ports:
+            - containerPort: 5678

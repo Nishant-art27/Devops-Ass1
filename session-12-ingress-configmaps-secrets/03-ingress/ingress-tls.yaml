@@ -1,0 +1,43 @@
+# Hybrid routing (host + path) with TLS termination using the nishant-tls-cert secret
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nishant-ingress-tls
+  labels:
+    app: nishantapp
+    owner: nishant
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - portal.nishant.local
+        - api.nishant.local
+      secretName: nishant-tls-cert
+  rules:
+    - host: portal.nishant.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nishantapp-frontend
+                port:
+                  number: 80
+    - host: api.nishant.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: nishantapp-backend
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nishantapp-backend
+                port:
+                  number: 8080

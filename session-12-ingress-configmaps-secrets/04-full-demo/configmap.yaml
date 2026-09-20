@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nishantapp-config
+  labels:
+    app: nishantapp
+    owner: nishant
+data:
+  APP_NAME: "Nishant App"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  PORT: "8080"
+  DEFAULT_CURRENCY: "INR"

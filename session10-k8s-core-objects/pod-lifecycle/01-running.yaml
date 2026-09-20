@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-running
+  labels: {owner: nishant, demo: lifecycle}
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27-alpine

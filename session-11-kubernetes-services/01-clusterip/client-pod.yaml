@@ -1,0 +1,13 @@
+# Diagnostic pod with curl and nslookup (alpine busybox) for in-cluster tests
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-client
+  labels:
+    owner: nishant
+    role: client
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:8.10.1
+      command: ["sleep", "infinity"]

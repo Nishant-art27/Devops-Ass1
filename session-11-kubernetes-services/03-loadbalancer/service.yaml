@@ -1,0 +1,15 @@
+# LoadBalancer: asks the cloud provider (or minikube tunnel) for an external IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service-loadbalancer
+  labels:
+    owner: nishant
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-loadbalancer
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

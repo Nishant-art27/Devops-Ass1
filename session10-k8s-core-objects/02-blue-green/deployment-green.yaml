@@ -1,0 +1,25 @@
+# Task 11: green environment (3 replicas) - http-echo returns which slot answered
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-green
+  labels:
+    owner: nishant
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+      slot: green
+  template:
+    metadata:
+      labels:
+        app: myapp
+        slot: green
+    spec:
+      containers:
+        - name: web
+          image: hashicorp/http-echo:1.0
+          args: ["-listen=:5678", "-text=GREEN ENVIRONMENT - Nishant app v2"]
+          ports:
+            - containerPort: 5678

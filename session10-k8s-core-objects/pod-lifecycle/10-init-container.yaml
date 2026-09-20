@@ -1,0 +1,14 @@
+# Init container must finish before the app container starts
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-init
+  labels: {owner: nishant, demo: lifecycle}
+spec:
+  initContainers:
+    - name: init-setup
+      image: busybox:1.36
+      command: ["sh", "-c", "echo 'init-setup: preparing config for Nishant app'; sleep 5"]
+  containers:
+    - name: app
+      image: nginx:1.27-alpine

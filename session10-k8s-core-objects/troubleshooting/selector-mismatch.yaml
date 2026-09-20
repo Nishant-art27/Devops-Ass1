@@ -1,0 +1,21 @@
+# Task 9 Drill 2: selector says app=foo but the pod template is labelled app=bar.
+# The API server rejects this; a client-side dry-run does not catch it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selector-error-demo
+  labels:
+    owner: nishant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: foo
+  template:
+    metadata:
+      labels:
+        app: bar
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine

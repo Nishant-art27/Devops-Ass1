@@ -1,0 +1,17 @@
+# Startup probe protects a slow-starting app from the liveness probe
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-startup
+  labels: {owner: nishant, demo: lifecycle}
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27-alpine
+      startupProbe:
+        httpGet: {path: /, port: 80}
+        failureThreshold: 30
+        periodSeconds: 2
+      livenessProbe:
+        httpGet: {path: /, port: 80}
+        periodSeconds: 10

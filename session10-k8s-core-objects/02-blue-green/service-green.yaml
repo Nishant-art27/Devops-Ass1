@@ -1,0 +1,16 @@
+# Task 11: myapp-service pointing at the green slot
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  labels:
+    owner: nishant
+spec:
+  type: NodePort
+  selector:
+    app: myapp
+    slot: green
+  ports:
+    - port: 80
+      targetPort: 5678
+      nodePort: 30020

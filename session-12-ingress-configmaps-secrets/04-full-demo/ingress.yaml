@@ -1,0 +1,31 @@
+# Path-based routing on one host: / -> frontend, /api/... -> backend (with /api stripped)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nishantapp-ingress
+  labels:
+    app: nishantapp
+    owner: nishant
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: nishantapp.local
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: nishantapp-backend
+                port:
+                  number: 8080
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: nishantapp-frontend
+                port:
+                  number: 80

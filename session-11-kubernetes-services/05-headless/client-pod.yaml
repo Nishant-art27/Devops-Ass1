@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: headless-dns-client
+  labels:
+    owner: nishant
+    role: client
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.10.1
+      command: ["sleep", "infinity"]

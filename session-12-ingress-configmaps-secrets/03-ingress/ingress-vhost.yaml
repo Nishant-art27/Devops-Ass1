@@ -1,0 +1,31 @@
+# Virtual-host routing: same IP, the Host header decides which Service answers
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nishant-ingress-vhost
+  labels:
+    app: nishantapp
+    owner: nishant
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: portal.nishant.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nishantapp-frontend
+                port:
+                  number: 80
+    - host: api.nishant.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nishantapp-backend
+                port:
+                  number: 8080

@@ -1,0 +1,23 @@
+# Task 8: web Deployment version 1 (nginx:1.25-alpine)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    owner: nishant
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+        version: v1
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
