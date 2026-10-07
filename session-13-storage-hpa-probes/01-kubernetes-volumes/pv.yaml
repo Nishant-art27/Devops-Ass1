@@ -1,0 +1,15 @@
+# A PersistentVolume created by hand (static provisioning), backed by a node directory
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nishant-pv
+  labels: {owner: nishant}
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /tmp/nishant-pv-data
+    type: DirectoryOrCreate
