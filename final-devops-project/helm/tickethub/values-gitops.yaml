@@ -2,11 +2,11 @@
 backend:
   image:
     repository: ghcr.io/nishant-art27/devops-ass1/tickethub-backend
-    tag: "a53eb9b8a5838ff7a4a05844a9b0a59159754769"
+    tag: "b560f57a0751cbb13a6804e9909c889a51ac0b8e"
 frontend:
   image:
     repository: ghcr.io/nishant-art27/devops-ass1/tickethub-frontend
-    tag: "a53eb9b8a5838ff7a4a05844a9b0a59159754769"
+    tag: "b560f57a0751cbb13a6804e9909c889a51ac0b8e"
 ingress:
   enabled: true
   host: tickethub.local
