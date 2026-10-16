@@ -135,9 +135,27 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           input: /tmp/${{ matrix.component }}.tar
+          format: table
+          output: ${{ github.workspace }}/trivy-${{ matrix.component }}.txt
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+      # Logs are only visible to signed-in users; the run summary is public.
+      # Runs even when the scan fails, so findings are visible as well.
+      - name: Publish the Trivy table to the run summary
+        if: always()
+        env:
+          COMPONENT: ${{ matrix.component }}
+        run: |
+          f="$GITHUB_WORKSPACE/trivy-$COMPONENT.txt"
+          [ -f "$f" ] || exit 0
+          cat "$f"
+          {
+            echo "### Trivy: $COMPONENT image (HIGH and CRITICAL, fixable only)"
+            echo '```'
+            cat "$f"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   security-gate:
     name: Security gate

@@ -87,6 +87,7 @@ jobs:
         with:
           image-ref: ${{ env.BACKEND_IMAGE }}
           format: table
+          output: ${{ github.workspace }}/trivy-backend.txt
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
@@ -96,9 +97,27 @@ jobs:
         with:
           image-ref: ${{ env.FRONTEND_IMAGE }}
           format: table
+          output: ${{ github.workspace }}/trivy-frontend.txt
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+
+      # Logs are only visible to signed-in users; the run summary is public.
+      # Runs even when a scan fails, so findings are visible as well.
+      - name: Publish the Trivy tables to the run summary
+        if: always()
+        run: |
+          for c in backend frontend; do
+            f="$GITHUB_WORKSPACE/trivy-$c.txt"
+            [ -f "$f" ] || continue
+            cat "$f"
+            {
+              echo "### Trivy: $c image (HIGH and CRITICAL, fixable only)"
+              echo '```'
+              cat "$f"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
