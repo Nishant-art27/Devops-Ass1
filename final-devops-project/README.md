@@ -149,13 +149,23 @@ The pipeline on `main` ([all runs](https://github.com/Nishant-art27/Devops-Ass1/
 
 ![Pipeline run](screenshots/04-ci-pipeline-run.png)
 
+Both images on GHCR, tagged with the commit SHA:
+
+![GHCR backend package](screenshots/04b-ghcr-tickethub-backend.png)
+
+![GHCR frontend package](screenshots/04c-ghcr-tickethub-frontend.png)
+
 ---
 
 ## M6. Security scanning
 
 Trivy scans both images in the pipeline with `severity: HIGH,CRITICAL`, `ignore-unfixed: true` and `exit-code: 1`, so any fixable high or critical CVE in the Debian or Alpine base, the Python packages or the nginx layer fails the run before anything is pushed. Bandit, pip-audit, `npm audit --audit-level=high` and Gitleaks cover the source, the dependencies and committed secrets. What Trivy scans is the filesystem of the finished image, OS packages plus language packages; a clean result means no known, patched vulnerability of that severity is present in that image at that moment, not that the application is bug-free.
 
-Locally the same checks ran on Session 17's image; see that folder for the Bandit, pip-audit, Gitleaks and Trivy output. The frontend image is scanned the same way in the pipeline.
+Locally the same checks ran on Session 17's image; see that folder for the Bandit, pip-audit, Gitleaks and Trivy output.
+
+In the pipeline, each Trivy scan also posts its result as an annotation on the run page. GitHub shows annotations to anyone, while logs and run summaries need a signed-in account. The pipeline's own scan of both TicketHub images is clean:
+
+![Trivy in the pipeline](screenshots/04e-ci-trivy-pipeline.png)
 
 ---
 

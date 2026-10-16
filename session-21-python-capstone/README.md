@@ -22,10 +22,10 @@ laptop                                      kind cluster "taskboard" (local Kube
 | A. Understand the application | [taskboard/backend](taskboard/backend), [taskboard/frontend](taskboard/frontend) | [API docs](screenshots/02-api-docs.png) |
 | B. Run it locally (Compose) | [taskboard/docker-compose.yml](taskboard/docker-compose.yml) | [compose up](screenshots/t-03-compose-up.png), [dashboard](screenshots/01-app-dashboard.png) |
 | C. Testing | [taskboard/backend/tests](taskboard/backend/tests) | [pytest -v, 13 passed](screenshots/t-01-pytest.png) |
-| D. Git and GitHub | this repository | commit history on GitHub |
+| D. Git and GitHub | this repository | [commit history](screenshots/04d-commit-history.png) |
 | E. Docker | the two Dockerfiles | [images, non-root users](screenshots/t-07-docker-images.png) |
-| F. CI/CD | [.github/workflows/session21-taskboard-ci-cd.yml](../.github/workflows/session21-taskboard-ci-cd.yml) | [green run on `main`](screenshots/04-ci-pipeline-run.png), [GHCR packages](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/taskboard-backend) |
-| G. Security scanning | Trivy step in the workflow, run locally too | [before](screenshots/t-09-trivy-before.png), [after](screenshots/t-08-trivy-after.png) |
+| F. CI/CD | [.github/workflows/session21-taskboard-ci-cd.yml](../.github/workflows/session21-taskboard-ci-cd.yml) | [green run on `main`](screenshots/04-ci-pipeline-run.png), [GHCR packages](screenshots/04b-ghcr-taskboard-backend.png) |
+| G. Security scanning | Trivy step in the workflow, run locally too | [before](screenshots/t-09-trivy-before.png), [after](screenshots/t-08-trivy-after.png), [in the pipeline](screenshots/04e-ci-trivy-pipeline.png) |
 | H. Terraform | [taskboard/terraform](taskboard/terraform) | [init, validate, plan](screenshots/t-21-terraform.png) |
 | I, J. Kubernetes + Helm | [taskboard/k8s](taskboard/k8s), [taskboard/helm/taskboard](taskboard/helm/taskboard) | [helm install](screenshots/t-12-helm-install.png), [objects](screenshots/t-13-k8s-objects.png) |
 | K. Ingress | `helm/taskboard/templates/ingress.yaml` | [curl through the host](screenshots/t-14-ingress-access.png), [browser](screenshots/03-ingress-browser.png) |
@@ -168,6 +168,10 @@ session21: kind config, Grafana dashboard ConfigMap, load and seed scripts
 session21: README and screenshots
 ```
 
+The commit history on GitHub, well past the ten commits the rubric asks for:
+
+![Commit history](screenshots/04d-commit-history.png)
+
 ---
 
 ## Part E. Docker
@@ -202,6 +206,12 @@ The pipeline on `main` ([all runs](https://github.com/Nishant-art27/Devops-Ass1/
 
 ![Pipeline run](screenshots/04-ci-pipeline-run.png)
 
+Both images on GHCR, tagged with the commit SHA:
+
+![GHCR backend package](screenshots/04b-ghcr-taskboard-backend.png)
+
+![GHCR frontend package](screenshots/04c-ghcr-taskboard-frontend.png)
+
 ---
 
 ## Part G. Security scanning
@@ -217,6 +227,10 @@ The reference images, scanned before any change:
 After the upgrades both images pass the same gate the pipeline uses:
 
 ![Trivy after](screenshots/t-08-trivy-after.png)
+
+In the pipeline, each scan also posts its result as an annotation on the run page. GitHub shows annotations to anyone, while logs and run summaries need a signed-in account. The pipeline's own scan of both images, tagged with the commit SHA, is clean:
+
+![Trivy in the pipeline](screenshots/04e-ci-trivy-pipeline.png)
 
 ---
 
@@ -337,7 +351,7 @@ Final state of the cluster at the end of the lab:
 | M3 Git | Ignores in place, folder committed and pushed to `main`, root README index | |
 | M4 Docker | Both Dockerfiles non-root, multi-stage frontend, Compose with health checks | |
 | M5 CI/CD | Workflow at the repository root, SHA tags, GHCR push, Helm deploy; green run and public packages in Part F | |
-| M6 Trivy | In the pipeline and run locally; before/after findings explained | |
+| M6 Trivy | In the pipeline (result posted as a public annotation) and run locally; before/after findings explained | |
 | M7 Terraform | HCL, `init`, `fmt`, `validate`, `tfvars.example` | AWS credentials for `plan`, `apply`, console screenshot, `destroy` |
 | M8 Kubernetes + Helm | Namespace, chart, 2 replicas each, ClusterIP Services, Ingress, all Running | |
 | M9 Observability | `/metrics`, Prometheus scraping, Grafana dashboard with live panels | |
