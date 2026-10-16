@@ -24,7 +24,7 @@ laptop                                      kind cluster "taskboard" (local Kube
 | C. Testing | [taskboard/backend/tests](taskboard/backend/tests) | [pytest -v, 13 passed](screenshots/t-01-pytest.png) |
 | D. Git and GitHub | this repository | commit history on GitHub |
 | E. Docker | the two Dockerfiles | [images, non-root users](screenshots/t-07-docker-images.png) |
-| F. CI/CD | [.github/workflows/session21-taskboard-ci-cd.yml](../.github/workflows/session21-taskboard-ci-cd.yml) | runs on the next push to `main` |
+| F. CI/CD | [.github/workflows/session21-taskboard-ci-cd.yml](../.github/workflows/session21-taskboard-ci-cd.yml) | [green run on `main`](screenshots/04-ci-pipeline-run.png), [GHCR packages](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/taskboard-backend) |
 | G. Security scanning | Trivy step in the workflow, run locally too | [before](screenshots/t-09-trivy-before.png), [after](screenshots/t-08-trivy-after.png) |
 | H. Terraform | [taskboard/terraform](taskboard/terraform) | [init, validate, plan](screenshots/t-21-terraform.png) |
 | I, J. Kubernetes + Helm | [taskboard/k8s](taskboard/k8s), [taskboard/helm/taskboard](taskboard/helm/taskboard) | [helm install](screenshots/t-12-helm-install.png), [objects](screenshots/t-13-k8s-objects.png) |
@@ -115,6 +115,7 @@ The upstream TaskBoard is a teaching skeleton; several things stop it from worki
 | Trivy would fail the pipeline: `starlette 0.41.3` has three fixable HIGH CVEs, `nginx:1.27-alpine` carries 41 HIGH and 2 CRITICAL fixable OS CVEs | FastAPI 0.143 / Starlette 1.8, `nginx-unprivileged:1.31-alpine` (Alpine 3.24); both images scan clean |
 | Terraform in one-line HCL, no `terraform.tfvars.example` | Formatted, variables for every tunable, example tfvars, subnet tags for EKS load balancers |
 | CI workflow lived inside the project folder (GitHub ignores it there) and used the mixed-case repository owner in the GHCR image name (GHCR requires lower case) | Workflow at the repository root with path filters, image names lower-cased |
+| The workflow pinned `aquasecurity/trivy-action@0.30.0`: that tag does not exist (releases are `v`-prefixed), and `v0.30.0` itself depends on a `setup-trivy@v0.2.2` tag that has since been deleted, so the build job died at "Set up job" before any step ran | `aquasecurity/trivy-action@v0.36.0`, which pins its `setup-trivy` dependency by commit |
 
 The name in the UI was changed from the template's to mine; everything else in the UI is the reference design.
 
@@ -196,6 +197,10 @@ npm ci, npm build    trivy (HIGH,CRITICAL, exit 1)  tag = commit SHA
 - Tags are the commit SHA, never `latest`: `ghcr.io/nishant-art27/taskboard-backend:<sha>` and `.../taskboard-frontend:<sha>`.
 - A failing test stops the build; a HIGH or CRITICAL finding stops the push; a pull request builds and scans but never pushes.
 - The deploy job decodes a kubeconfig from the `KUBE_CONFIG_DATA` secret and runs `helm upgrade --install` with `--set backend.tag=<sha> --set frontend.tag=<sha>`. Without that secret it prints why it is skipping and ends green, so the pipeline is usable before a cluster is reachable from GitHub.
+
+The pipeline on `main` ([all runs](https://github.com/Nishant-art27/Devops-Ass1/actions/workflows/session21-taskboard-ci-cd.yml)) is green end to end: the test job, the build job with both Trivy scans clean and both images pushed, and the deploy job (which skipped itself, since no cluster secret is set). The two packages, [taskboard-backend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/taskboard-backend) and [taskboard-frontend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/taskboard-frontend), are public on GHCR and tagged with the commit SHA. The first runs failed at "Set up job" because of the Trivy action tag described in Part A.
+
+![Pipeline run](screenshots/04-ci-pipeline-run.png)
 
 ---
 
@@ -329,9 +334,9 @@ Final state of the cluster at the end of the lab:
 | --- | --- | --- |
 | M1 application | Backend, 9 endpoints, Alembic migration, React UI, responsive | |
 | M2 tests | 13 tests, SQLite conftest, `pytest.ini` | |
-| M3 Git | Ignores in place, commit sequence suggested above | The commits and push (account owner) |
+| M3 Git | Ignores in place, folder committed and pushed to `main`, root README index | |
 | M4 Docker | Both Dockerfiles non-root, multi-stage frontend, Compose with health checks | |
-| M5 CI/CD | Workflow at the repository root, SHA tags, GHCR push, Helm deploy | First push to `main` for the run URL and package page |
+| M5 CI/CD | Workflow at the repository root, SHA tags, GHCR push, Helm deploy; green run and public packages in Part F | |
 | M6 Trivy | In the pipeline and run locally; before/after findings explained | |
 | M7 Terraform | HCL, `init`, `fmt`, `validate`, `tfvars.example` | AWS credentials for `plan`, `apply`, console screenshot, `destroy` |
 | M8 Kubernetes + Helm | Namespace, chart, 2 replicas each, ClusterIP Services, Ingress, all Running | |

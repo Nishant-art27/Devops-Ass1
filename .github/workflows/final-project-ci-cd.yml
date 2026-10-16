@@ -1,0 +1,238 @@
+name: TicketHub CI/CD (final project)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "final-devops-project/**"
+      - ".github/workflows/final-project-ci-cd.yml"
+      - "!final-devops-project/helm/tickethub/values-gitops.yaml"   # written by this pipeline
+      - "!final-devops-project/**/*.md"
+      - "!final-devops-project/screenshots/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "final-devops-project/**"
+      - ".github/workflows/final-project-ci-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT: final-devops-project
+  BACKEND_DIR: final-devops-project/application/backend
+  FRONTEND_DIR: final-devops-project/application/frontend
+
+jobs:
+  # ------------------------------------------------------------ CI
+  backend-test:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.BACKEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Run tests (a failure stops the pipeline here)
+        run: pytest -v --cov=app --cov-report=term-missing
+
+  frontend-build:
+    name: Frontend build (vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.FRONTEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ${{ env.FRONTEND_DIR }}/dist
+          retention-days: 3
+
+  # ------------------------------------------------------------ security checks
+  sast:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit && bandit -r ${{ env.BACKEND_DIR }}/app -ll
+
+  sca:
+    name: SCA (pip-audit + npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit && pip-audit -r ${{ env.BACKEND_DIR }}/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (high or critical fails)
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm audit --audit-level=high
+
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          docker run --rm -v "$PWD/${{ env.PROJECT }}:/scan" zricethezav/gitleaks:latest \
+            detect --no-git --source /scan --redact --verbose
+
+  # ------------------------------------------------------------ images
+  build-images:
+    name: Build ${{ matrix.component }} image
+    needs: [backend-test, frontend-build, sast, sca, secret-scan]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, tagged with the commit SHA (never "latest")
+        run: docker build -t tickethub-${{ matrix.component }}:${{ github.sha }} ${{ env.PROJECT }}/application/${{ matrix.component }}
+      - run: docker save tickethub-${{ matrix.component }}:${{ github.sha }} -o /tmp/${{ matrix.component }}.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.component }}
+          path: /tmp/${{ matrix.component }}.tar
+          retention-days: 1
+
+  image-scan:
+    name: Trivy scan ${{ matrix.component }}
+    needs: build-images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.component }}
+          path: /tmp
+      - name: Fail on fixable HIGH or CRITICAL CVEs
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          input: /tmp/${{ matrix.component }}.tar
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  security-gate:
+    name: Security gate
+    needs: [backend-test, frontend-build, sast, sca, secret-scan, image-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "tests, SAST, SCA, secret scan and both image scans are green; images may be published"
+
+  # ------------------------------------------------------------ CD
+  push-images:
+    name: Push ${{ matrix.component }} to GHCR
+    needs: security-gate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: image-${{ matrix.component }}
+          path: /tmp
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag with the commit SHA and push
+        run: |
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=ghcr.io/$REPO/tickethub-${{ matrix.component }}:${{ github.sha }}
+          docker load -i /tmp/${{ matrix.component }}.tar
+          docker tag tickethub-${{ matrix.component }}:${{ github.sha }} $IMAGE
+          docker push $IMAGE
+          echo "Pushed $IMAGE" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-test:
+    name: Deploy to Kubernetes (kind) and smoke test
+    needs: push-images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: /tmp
+          merge-multiple: true
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: tickethub-ci
+      - name: Load the pipeline's images into the cluster
+        run: |
+          for c in backend frontend; do
+            docker load -i /tmp/$c.tar
+            kind load docker-image tickethub-$c:${{ github.sha }} --name tickethub-ci
+          done
+      - name: Helm install
+        run: |
+          kubectl apply -f ${{ env.PROJECT }}/kubernetes/namespace.yaml
+          helm upgrade --install tickethub ${{ env.PROJECT }}/helm/tickethub -n tickethub \
+            --set backend.image.repository=tickethub-backend --set backend.image.tag=${{ github.sha }} --set backend.image.pullPolicy=Never \
+            --set frontend.image.repository=tickethub-frontend --set frontend.image.tag=${{ github.sha }} --set frontend.image.pullPolicy=Never \
+            --set ingress.enabled=false --set hpa.enabled=false \
+            --wait --timeout 5m
+          kubectl get pods,svc -n tickethub
+      - name: Smoke test through the frontend proxy
+        run: |
+          kubectl port-forward -n tickethub svc/tickethub-frontend 3000:80 &
+          sleep 5
+          curl -sf http://localhost:3000/healthz
+          curl -sf http://localhost:3000/api/tickets/stats
+          curl -sf -X POST http://localhost:3000/api/tickets -H 'Content-Type: application/json' \
+            -d '{"title":"CI smoke test ticket","priority":"low","requester":"ci@github"}'
+          curl -sf http://localhost:3000/api/tickets | grep -q "CI smoke test ticket" && echo "Smoke test passed"
+
+  # ------------------------------------------------------------ GitOps
+  gitops-update:
+    name: GitOps - bump image tags for Argo CD
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write the new SHA into values-gitops.yaml
+        run: |
+          FILE=${{ env.PROJECT }}/helm/tickethub/values-gitops.yaml
+          sed -i -E 's/^(\s*tag:).*/\1 "${{ github.sha }}"/' "$FILE"
+          git diff
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "gitops: deploy TicketHub ${GITHUB_SHA::7} [skip ci]" || { echo "no change"; exit 0; }
+          git pull --rebase origin main
+          git push origin HEAD:main

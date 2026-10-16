@@ -145,6 +145,10 @@ secret-scan  ─┘                                                             
 
 Images land at `ghcr.io/nishant-art27/devops-ass1/tickethub-backend:<sha>` and `.../tickethub-frontend:<sha>`.
 
+The pipeline on `main` ([all runs](https://github.com/Nishant-art27/Devops-Ass1/actions/workflows/final-project-ci-cd.yml)) is green end to end. The two packages, [tickethub-backend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/devops-ass1%2Ftickethub-backend) and [tickethub-frontend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/devops-ass1%2Ftickethub-frontend), are public on GHCR and tagged with the commit SHA.
+
+![Pipeline run](screenshots/04-ci-pipeline-run.png)
+
 ---
 
 ## M6. Security scanning
@@ -263,11 +267,11 @@ Two things that go wrong in real clusters, reproduced on purpose and fixed with 
 | Module | Done here | Needs |
 | --- | --- | --- |
 | M1 application, M2 tests, M4 Docker | Yes, with screenshots | |
-| M3 Git | Repository and ignores in place | The push of this folder |
-| M5 CI/CD, M6 Trivy in CI | Workflow written and validated against the same steps locally | The first push to `main` for a run URL and the GHCR package page |
+| M3 Git | Repository and ignores in place, folder pushed to `main` | |
+| M5 CI/CD, M6 Trivy in CI | Pipeline green on `main`, [all runs](https://github.com/Nishant-art27/Devops-Ass1/actions/workflows/final-project-ci-cd.yml) (tests, scans, Trivy on both images, push to GHCR, kind smoke test, GitOps commit); packages [tickethub-backend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/devops-ass1%2Ftickethub-backend) and [tickethub-frontend](https://github.com/Nishant-art27/Devops-Ass1/pkgs/container/devops-ass1%2Ftickethub-frontend) tagged with the commit SHA | |
 | M7 Terraform | Code, `init`, `validate` | AWS credentials for `plan`, `apply`, console screenshot, `destroy` |
 | M8 Kubernetes and Helm | Yes, on kind, with screenshots | |
 | M9 Prometheus and Grafana | Yes, on kind, with screenshots | |
 | M10 README and demo | This file | The live demo |
 
-Everything marked "Needs" is a credential or a push I did not want to perform without the account owner; nothing in the code changes for it.
+Everything still marked "Needs" is an AWS credential or the live presentation; nothing in the code changes for it.
