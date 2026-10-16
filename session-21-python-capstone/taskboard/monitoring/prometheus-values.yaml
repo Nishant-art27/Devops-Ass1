@@ -1,0 +1,26 @@
+# Values for prometheus-community/kube-prometheus-stack on the lab cluster.
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f monitoring/prometheus-values.yaml
+grafana:
+  enabled: true
+  adminPassword: admin
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard   # ConfigMaps with this label become dashboards (see grafana-dashboard.yaml)
+      searchNamespace: ALL
+
+prometheus:
+  prometheusSpec:
+    # Pick up every ServiceMonitor in every namespace, not only the ones labelled with this release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 2d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+
+alertmanager:
+  enabled: false

@@ -1,0 +1,8 @@
+TaskBoard {{ .Chart.Version }} is installed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+  kubectl get pods,svc,ingress,hpa -n {{ .Release.Namespace }}
+{{- if .Values.ingress.enabled }}
+  Open http://{{ .Values.ingress.host }}/  (point {{ .Values.ingress.host }} at your ingress controller)
+{{- else }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "taskboard.frontendName" . }} 3000:80
+{{- end }}

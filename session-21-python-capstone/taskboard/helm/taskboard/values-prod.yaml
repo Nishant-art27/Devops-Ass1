@@ -1,0 +1,16 @@
+# Production-style values: images from GHCR (tags set by the pipeline), public hostname, autoscaling on.
+frontend:
+  image: ghcr.io/nishant-art27/taskboard-frontend
+backend:
+  image: ghcr.io/nishant-art27/taskboard-backend
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.example.com
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+monitoring:
+  serviceMonitor:
+    enabled: true

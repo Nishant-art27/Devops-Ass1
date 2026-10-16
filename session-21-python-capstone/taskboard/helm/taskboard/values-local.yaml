@@ -1,0 +1,19 @@
+# kind / minikube on a laptop with images loaded by `kind load docker-image`.
+frontend:
+  image: taskboard-frontend
+  tag: local
+backend:
+  image: taskboard-backend
+  tag: local
+imagePullPolicy: IfNotPresent
+replicaCount: 2
+ingress:
+  enabled: true
+  host: taskboard.local
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+postgres:
+  storage: 1Gi

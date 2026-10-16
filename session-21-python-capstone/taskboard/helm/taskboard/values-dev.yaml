@@ -1,0 +1,7 @@
+# Small footprint for a developer cluster: one replica, ingress on, autoscaling off.
+replicaCount: 1
+ingress:
+  enabled: true
+  host: taskboard.local
+hpa:
+  enabled: false

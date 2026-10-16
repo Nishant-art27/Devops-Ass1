@@ -1,0 +1,12 @@
+# Lab 2: the selector matches no Pod. Expect a Service with no endpoints.
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-service
+  namespace: taskboard
+spec:
+  selector:
+    app: label-that-does-not-exist
+  ports:
+    - port: 8000
+      targetPort: 8000

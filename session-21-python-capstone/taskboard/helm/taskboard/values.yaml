@@ -1,0 +1,61 @@
+# Default values for the TaskBoard chart. Override per environment with values-dev.yaml / values-prod.yaml / values-local.yaml.
+frontend:
+  image: ghcr.io/nishant-art27/taskboard-frontend
+  tag: latest
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+backend:
+  image: ghcr.io/nishant-art27/taskboard-backend
+  tag: latest
+
+imagePullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# Replicas for both the backend and the frontend Deployments (the HPA takes over for the backend when enabled).
+replicaCount: 2
+
+# Backend resources. The HPA needs the CPU request to compute utilisation.
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+postgres:
+  image: postgres:16-alpine
+  database: taskboard
+  username: taskboard
+  password: taskboard   # classroom only; override with --set postgres.password=... or a sealed secret
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  host: taskboard.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+monitoring:
+  serviceMonitor:
+    enabled: false        # turn on once kube-prometheus-stack (and its CRDs) is installed
+    release: kube-prometheus-stack
+    interval: 15s

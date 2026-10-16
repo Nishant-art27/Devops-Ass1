@@ -1,0 +1,25 @@
+# editors
+.idea/
+.vscode/
+.DS_Store
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+test.db
+*.sqlite3
+# node
+node_modules/
+dist/
+# secrets and local config
+.env
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+# logs
+*.log
