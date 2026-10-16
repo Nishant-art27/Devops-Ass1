@@ -132,6 +132,7 @@ jobs:
           name: image-${{ matrix.component }}
           path: /tmp
       - name: Fail on fixable HIGH or CRITICAL CVEs
+        id: trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           input: /tmp/${{ matrix.component }}.tar
@@ -140,12 +141,13 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
-      # Logs are only visible to signed-in users; the run summary is public.
-      # Runs even when the scan fails, so findings are visible as well.
-      - name: Publish the Trivy table to the run summary
+      # Logs and the run summary are only shown to signed-in users; annotations
+      # are public. Runs even when the scan fails, so findings are visible as well.
+      - name: Publish the Trivy result (log, run summary, annotation)
         if: always()
         env:
           COMPONENT: ${{ matrix.component }}
+          OUTCOME: ${{ steps.trivy.outcome }}
         run: |
           f="$GITHUB_WORKSPACE/trivy-$COMPONENT.txt"
           [ -f "$f" ] || exit 0
@@ -156,6 +158,9 @@ jobs:
             cat "$f"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$OUTCOME" = success ]; then level=notice; verdict="passed, no fixable HIGH or CRITICAL vulnerabilities"; else level=error; verdict="FAILED, fixable HIGH or CRITICAL vulnerabilities found"; fi
+          body=$(sed -e 's/%/%25/g' -e 's/\r//g' "$f" | awk '{printf "%s%%0A", $0}')
+          echo "::$level title=Trivy $COMPONENT image::Trivy scan of the tickethub-$COMPONENT image built from ${GITHUB_SHA::7}: $verdict%0A%0A$body"
 
   security-gate:
     name: Security gate

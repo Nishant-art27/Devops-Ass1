@@ -83,6 +83,7 @@ jobs:
         run: docker build -t "$FRONTEND_IMAGE" ./frontend
 
       - name: Trivy scan - backend image
+        id: trivy_backend
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.BACKEND_IMAGE }}
@@ -93,6 +94,7 @@ jobs:
           exit-code: "1"
 
       - name: Trivy scan - frontend image
+        id: trivy_frontend
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.FRONTEND_IMAGE }}
@@ -102,10 +104,13 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
 
-      # Logs are only visible to signed-in users; the run summary is public.
-      # Runs even when a scan fails, so findings are visible as well.
-      - name: Publish the Trivy tables to the run summary
+      # Logs and the run summary are only shown to signed-in users; annotations
+      # are public. Runs even when a scan fails, so findings are visible as well.
+      - name: Publish the Trivy results (log, run summary, annotation)
         if: always()
+        env:
+          BACKEND_OUTCOME: ${{ steps.trivy_backend.outcome }}
+          FRONTEND_OUTCOME: ${{ steps.trivy_frontend.outcome }}
         run: |
           for c in backend frontend; do
             f="$GITHUB_WORKSPACE/trivy-$c.txt"
@@ -117,6 +122,10 @@ jobs:
               cat "$f"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
+            if [ "$c" = backend ]; then outcome="$BACKEND_OUTCOME"; image="$BACKEND_IMAGE"; else outcome="$FRONTEND_OUTCOME"; image="$FRONTEND_IMAGE"; fi
+            if [ "$outcome" = success ]; then level=notice; verdict="passed, no fixable HIGH or CRITICAL vulnerabilities"; else level=error; verdict="FAILED, fixable HIGH or CRITICAL vulnerabilities found"; fi
+            body=$(sed -e 's/%/%25/g' -e 's/\r//g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::$level title=Trivy $c image::Trivy scan of $image $verdict%0A%0A$body"
           done
 
       - name: Log in to GitHub Container Registry
